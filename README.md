@@ -43,3 +43,21 @@ before you publish.
   space but targets world points through the camera. No `will-change`, so text re-rasterizes crisp.
 - **Shadow in screen space.** Chrome clips box-shadow blur radii above ~110 px to a rectangle, so
   the shadow is a separate element outside the camera with a capped radius.
+
+## Parcel Sorter (second video, 1920×1080, 16 s)
+
+A motion-graphics piece in the style of a product-launch reel: a sorting window with live counters,
+glass stat cards, a caption plate and a 2×2 dashboard grid. Same engine as One Shape
+(`seek(t)`, closed-form springs, 4-subframe blur), different scenes.
+
+```bash
+python3 sorter/audio.py song.mp3 out/beats.json out/sorter/audio.wav   # needs out/beats.json from tools/analyze.py
+node sorter/render.mjs beats 0.3     # contact sheet, one frame per beat: out/sorter/beats_0.3.png
+node sorter/render.mjs full 4        # out/sorter/sorter_silent.mp4
+ffmpeg -i out/sorter/sorter_silent.mp4 -i out/sorter/audio.wav -map 0:v -map 1:a -c:v copy -c:a aac -shortest out/sorter/parcel-sorter.mp4
+```
+
+Timeline (120 BPM, 8 bars): scene 1 sorting `0–8 s`, scene 2 caption `8–12 s`, scene 3 grid `12–16 s`
+(one block per beat from 12.0 s). All data in the mock windows is made up. Fonts: Geist, Geist Mono, Onest (OFL).
+Two details worth knowing: counter text reads time quantized to the frame, so the 4 blur subframes show one
+number (no ghost digits); children of a faded parent must not set `visibility: visible`, or they outlive it.

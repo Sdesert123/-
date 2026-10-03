@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Parcel Sorter</title>
+<style>
+@font-face { font-family: Geist; src: url(../assets/fonts/Geist-Variable.woff2) format("woff2"); font-weight: 100 900; }
+@font-face { font-family: "Geist Mono"; src: url(fonts/GeistMono-Medium.woff2) format("woff2"); font-weight: 400 700; }
+@font-face { font-family: Onest; src: url(fonts/onest-cyrillic-wght-normal.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116; }
+@font-face { font-family: "Geist Mono"; src: url(fonts/GeistMono-Medium.woff2) format("woff2"); font-weight: 400 700; }
+@font-face { font-family: Onest; src: url(fonts/onest-latin-wght-normal.woff2) format("woff2"); font-weight: 100 900; unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+html, body { margin: 0; background: #120C09; }
+#stage { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #120C09;
+  font-family: Geist, Onest, system-ui, sans-serif; -webkit-font-smoothing: antialiased; color: #111; }
+.abs { position: absolute; }
+.fill { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.num { font-feature-settings: "tnum" 1; font-variant-numeric: tabular-nums; }
+.glow { position: absolute; border-radius: 50%; }
+svg { display: block; overflow: visible; }
+
+/* scene 1 */
+#ring { border-radius: 36px; background: rgba(255,255,255,.07); border: 1.5px solid rgba(255,255,255,.2);
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.18); }
+#win { background: #F5F5F7; border-radius: 24px; overflow: hidden; }
+#bar { background: linear-gradient(#EFEDEC, #E5E3E2); border-bottom: 1px solid #D8D5D3; }
+.tl { width: 14px; height: 14px; border-radius: 50%; }
+#url { background: rgba(0,0,0,.055); border-radius: 10px; text-align: center; font-size: 22px; color: #3A3836; line-height: 34px; }
+.cap { color: #8E8C8A; font-weight: 500; }
+.pcard { background: #fff; border-radius: 14px; box-shadow: 0 8px 22px -6px rgba(0,0,0,.14), 0 1px 2px rgba(0,0,0,.07); padding: 10px 16px; box-sizing: border-box; width: 300px; height: 64px; }
+.pcard b { display: block; font-size: 19px; font-weight: 600; color: #151515; line-height: 22px; }
+.pcard i { display: block; font-style: normal; font-size: 17px; color: #8A8886; line-height: 22px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gcard { border-radius: 40px; background: linear-gradient(155deg, rgba(255,255,255,.15), rgba(255,255,255,.045) 60%, rgba(255,255,255,.07));
+  border: 1.5px solid rgba(255,255,255,.17); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 24px 50px -24px rgba(0,0,0,.7);
+  font-family: Onest, Geist, sans-serif; box-sizing: border-box; padding: 20px 34px 0; }
+.gcard .big { font-size: 124px; font-weight: 800; letter-spacing: -3px; line-height: 124px; color: #F8F2EA; white-space: nowrap; }
+.gcard .sm { font-size: 31px; font-weight: 600; color: rgba(255,255,255,.72); line-height: 36px; margin-top: 2px; white-space: nowrap; }
+.or { color: #FF6B2C !important; }
+
+/* scene 2 */
+#plate { font-family: Onest, Geist, sans-serif; border-radius: 44px; box-sizing: border-box; padding: 34px 54px 40px;
+  background: linear-gradient(120deg, rgba(120,62,30,.62), rgba(255,255,255,.07) 70%);
+  border: 1.5px solid rgba(255,255,255,.2); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 30px 70px -26px rgba(0,0,0,.8); }
+#plate .ln { font-size: 88px; font-weight: 800; line-height: 104px; letter-spacing: -2px; color: #F8F2EA; white-space: nowrap; }
+.w { display: inline-block; }
+
+/* scene 3 */
+.frame { border-radius: 40px; box-sizing: border-box; padding: 12px;
+  background: linear-gradient(150deg, rgba(255,255,255,.17), rgba(255,255,255,.04) 55%, rgba(255,255,255,.09));
+  border: 1.5px solid rgba(255,255,255,.2); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 30px 60px -28px rgba(0,0,0,.8); }
+.scr { position: relative; width: 756px; height: 459px; border-radius: 28px; overflow: hidden; }
+.mono { font-family: "Geist Mono", ui-monospace, Menlo, monospace; }
+.pill { display: inline-block; border-radius: 99px; font-size: 13px; font-weight: 600; padding: 3px 10px; line-height: 16px; }
+.tiny { font-size: 12px; font-weight: 600; letter-spacing: .12em; }
+#hud { position: absolute; left: 16px; top: 12px; font: 500 22px Geist; color: #fff; display: none; z-index: 9; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="fill" id="bg">
+    <div class="glow" id="g1" style="left:-300px;top:-420px;width:1400px;height:1400px;background:radial-gradient(closest-side, rgba(150,84,40,.55), rgba(150,84,40,0))"></div>
+    <div class="glow" id="g2" style="left:1000px;top:380px;width:1300px;height:1300px;background:radial-gradient(closest-side, rgba(110,60,34,.5), rgba(110,60,34,0))"></div>
+    <div class="glow" id="g3" style="left:500px;top:300px;width:1100px;height:900px;background:radial-gradient(closest-side, rgba(255,106,44,.22), rgba(255,106,44,0))"></div>
+    <div class="fill" style="background:radial-gradient(ellipse at 50% 45%, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%)"></div>
+  </div>
+
+  <!-- scene 1 -->
+  <div class="fill" id="s1">
+    <div class="abs" id="ring" style="left:98px;top:33px;width:1724px;height:648px"></div>
+    <div class="abs" id="win" style="left:110px;top:45px;width:1700px;height:624px"></div>
+    <div class="abs" id="cards" style="left:0;top:775px;width:1920px;height:192px"></div>
+  </div>
+
+  <!-- scene 2 -->
+  <div class="fill" id="s2">
+    <div class="abs" id="room" style="left:110px;top:70px;width:1700px;height:640px"></div>
+    <div class="abs" id="plate" style="left:110px;top:760px">
+      <div class="ln" id="ln1"></div><div class="ln" id="ln2"></div>
+    </div>
+  </div>
+
+  <!-- scene 3 -->
+  <div class="fill" id="s3"></div>
+  <div id="hud"></div>
+</div>
+
+<script>
+"use strict";
+// ─────────────────────────────────────────────────────────── time model
+const T = 16, BEAT = 0.5, FPS = 60;
+const TAU = Math.PI * 2;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, u) => a + (b - a) * u;
+const mod = (a, n) => ((a % n) + n) % n;
+
+// Closed-form unit step response of a damped spring (see README: "How time works").
+function S(tau, sp) {
+  if (tau <= 0) return 0;
+  const w = TAU / sp.f, z = sp.z;
+  if (z >= 1) return 1 - Math.exp(-w * tau) * (1 + w * tau);
+  const wd = w * Math.sqrt(1 - z * z);
+  return 1 - Math.exp(-z * w * tau) * (Math.cos(wd * tau) + (z * w / wd) * Math.sin(wd * tau));
+}
+const IN = { f: .36, z: .9 }, SOFT = { f: .5, z: .94 }, OUT = { f: .18, z: 1 }, QUICK = { f: .24, z: 1 },
+  RING = { f: .3, z: .84 }, POP = { f: .42, z: .82 };
+// A value that reacts to a list of [time, target] events: sum of one spring per change.
+function events(t, list, sp) {
+  let v = list[0][1];
+  for (let i = 1; i < list.length; i++) v += (list[i][1] - list[i - 1][1]) * S(t - list[i][0], sp);
+  return v;
+}
+// Enter / exit wrapper: sets opacity, transform and blur from two springs.
+function io(el, t, t0, t1, o = {}, spIn = IN) {
+  const e = S(t - t0, spIn), x = t1 == null ? 0 : S(t - t1, OUT);
+  const op = clamp(e) * clamp(1 - x);
+  if (op < 0.003) { el.style.visibility = 'hidden'; el.style.opacity = '0'; return false; }
+  el.style.visibility = '';
+  el.style.opacity = op.toFixed(4);
+  const ki = 1 - e, ko = x;
+  const dx = (o.dx || 0) * ki + (o.dxOut || 0) * ko, dy = (o.dy || 0) * ki + (o.dyOut || 0) * ko;
+  const sc = 1 - (1 - (o.sc ?? 1)) * ki - (1 - (o.scOut ?? 1)) * ko;
+  const blur = (o.blur || 0) * (1 - clamp(e)) + (o.blurOut ?? o.blur ?? 0) * clamp(x);
+  const still = Math.abs(ki) < 0.0004 && ko < 0.0004;
+  el.style.transform = still ? 'none' : `translate(${dx.toFixed(2)}px, ${dy.toFixed(2)}px) scale(${sc.toFixed(4)})`;
+  el.style.filter = blur < 0.05 ? 'none' : `blur(${blur.toFixed(2)}px)`;
+  return true;
+}
+const $ = (h, parent, style, cls) => {
+  const d = document.createElement('div');
+  if (cls) d.className = cls;
+  if (style) d.style.cssText = style;
+  if (h) d.innerHTML = h;
+  if (parent) parent.appendChild(d);
+  return d;
+};
+const px = v => v.toFixed(2) + 'px';
+const fmt = n => Math.round(n).toLocaleString('en-US');
+
+// ─────────────────────────────────────────────────────────── scene 1 data
+const ZONES = [
+  { name: 'All',      c: '#9A9AA2', back: '#2E2E33', top: '#85858C', bot: '#46464C', fin: 1000 },
+  { name: 'Fragile',  c: '#2F6FE4', back: '#0E3A96', top: '#5AA0FA', bot: '#1457D4', fin: 36 },
+  { name: 'Express',  c: '#E58A12', back: '#86470F', top: '#F8B955', bot: '#E8860F', fin: 288 },
+  { name: 'Standard', c: '#27A843', back: '#14742B', top: '#6DE884', bot: '#2DBB4B', fin: 598 },
+  { name: 'Oversize', c: '#8E3FD0', back: '#541A88', top: '#B862EC', bot: '#8230C4', fin: 52 },
+  { name: 'Returns',  c: '#6E6E75', back: '#44444A', top: '#A4A4AA', bot: '#6C6C73', fin: 20 },
+  { name: 'Shipped',  c: '#17909B', back: '#0F6B76', top: '#52D4DB', bot: '#1D98A4', fin: 6 },
+];
+const BIN_X = k => 131 + 238 * k;
+const SENDERS = [['Northwind', 'Parcel RU-48213 · 2.4 kg'], ['Acme Parts', 'Parcel RU-48214 · 11.0 kg'], ['Globex', 'Parcel RU-48215 · 0.8 kg'],
+  ['Initech', 'Parcel RU-48216 · 3.1 kg'], ['Umbrella Co', 'Glass · handle with care'], ['Hooli', 'Parcel RU-48218 · 1.2 kg'],
+  ['Stark Supply', 'Parcel RU-48219 · 6.5 kg'], ['Wayne Freight', 'Pallet · 84 kg'], ['Soylent', 'Parcel RU-48221 · 0.4 kg'],
+  ['Vandelay', 'Parcel RU-48222 · 2.0 kg'], ['Cyberdyne', 'Return · label printed']];
+const ROUTE = [3, 2, 3, 1, 2, 3, 4, 3, 2, 5, 3];        // zone index per parcel
+const CONF = [98, 96, 99, 91, 97, 100, 93, 95, 98, 90, 100];
+const T0 = 2.0, N = SENDERS.length;                    // parcel i crosses the sorter on beat 2.0 + i/2
+const tc = i => T0 + BEAT * i;
+const SPEED = 680;                                     // px/s: one parcel spacing (340 px) per beat
+const SORT_P = t => { const u = clamp((t - 1.5) / 5.5); return 1 - Math.pow(1 - u, 3); };
+const count = (k, t) => Math.floor(ZONES[k].fin * SORT_P(t) + 1e-6);
+
+// ─────────────────────────────────────────────────────────── build scene 1
+const win = document.getElementById('win'), ringEl = document.getElementById('ring'), s1 = document.getElementById('s1');
+const barEl = $('', win, 'left:0;top:0;width:1700px;height:50px', ''); barEl.id = 'bar';
+[['#FF5F57', 34], ['#FEBC2E', 56], ['#28C840', 78]].forEach(([c, x]) => $('', barEl, `left:${x - 7}px;top:18px;background:${c}`, 'abs tl'));
+$('parcel-sorter.demo — ускорено', barEl, 'left:610px;top:8px;width:480px;height:34px', 'abs').id = 'url';
+document.getElementById('url').className = 'abs';
+document.getElementById('url').style.cssText += ';background:rgba(0,0,0,.055);border-radius:10px;text-align:center;font-size:22px;color:#3A3836;line-height:34px';
+
+const hdr = $('', win, 'left:0;top:0;width:1700px;height:200px', 'abs');
+$('SOURCE', hdr, 'left:26px;top:90px;font-size:20px;letter-spacing:.14em', 'abs cap');
+$(`<svg width="30" height="30" viewBox="0 0 30 30"><path d="M4 9 15 3l11 6v12L15 27 4 21z" fill="#E4B778"/><path d="M4 9l11 6 11-6M15 15v12" fill="none" stroke="#B9873F" stroke-width="1.6" stroke-linejoin="round"/></svg>`, hdr, 'left:128px;top:88px', 'abs');
+const sorting = $('', hdr, 'left:170px;top:86px;font-size:26px;font-weight:500;color:#111;line-height:34px;white-space:nowrap', 'abs num');
+$('15 per second', hdr, 'right:33px;top:88px;font-size:23px;color:#8E8C8A;line-height:30px', 'abs num');
+
+// classification labels, one per parcel
+const labels = [];
+for (let i = 0; i < N; i++) {
+  const z = ZONES[ROUTE[i]];
+  labels.push($(`${z.name} · ${CONF[i]}%`, win, `left:550px;top:116px;width:600px;text-align:center;font-size:22px;font-weight:500;color:${z.c};line-height:30px`, 'abs num'));
+}
+// parcel stream
+const stream = $('', win, 'left:26px;top:170px;width:1648px;height:96px;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 120px,#000 100%)', 'abs');
+const pcs = SENDERS.map(([a, b]) => $(`<b>${a}</b><i>${b}</i>`, stream, 'top:12px', 'abs pcard'));
+// progress track + sorter node
+$('', win, 'left:26px;top:252px;width:1648px;height:9px;border-radius:5px;background:#E3E2E4', 'abs');
+const fillEl = $('', win, 'left:26px;top:252px;height:9px;border-radius:5px;background:linear-gradient(90deg,#2F7BF5,#1E5FD6)', 'abs');
+const node = $('', win, 'left:843px;top:249px;width:14px;height:14px;border-radius:50%;background:#3A4A7A;border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);box-sizing:content-box;margin:-2.5px 0 0 -2.5px', 'abs');
+const nodeLbl = $('Sorter', win, 'left:750px;top:278px;width:200px;text-align:center;font-size:19px;color:#8E8C8A;font-weight:500', 'abs');
+
+// bins
+const orange = $('', win, 'left:24px;top:304px;width:1647px;height:271px;border:3px solid #FF6A2A;border-radius:24px;box-shadow:0 0 28px rgba(255,106,42,.35)', 'abs');
+const ring = $('', win, 'left:0;top:455px;width:174px;height:98px;box-sizing:border-box;border:3.5px solid #A9C8FF;border-radius:26px;box-shadow:inset 0 0 0 3px #fff', 'abs');
+const bins = ZONES.map((z, k) => {
+  const g = $('', win, `left:${BIN_X(k) - 100}px;top:0;width:200px;height:624px`, 'abs');
+  const num = $('0', g, 'left:0;top:360px;width:200px;text-align:center;font-size:56px;font-weight:500;color:#151515;line-height:62px', 'abs num');
+  const id = 'b' + k;
+  const svg = $(`<svg width="158" height="98" viewBox="0 0 158 98">
+    <defs>
+      <linearGradient id="${id}f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${z.top}"/><stop offset="1" stop-color="${z.bot}"/></linearGradient>
+      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${z.back}"/><stop offset="1" stop-color="${z.back}" stop-opacity=".85"/></linearGradient>
+      <filter id="${id}s" x="-20%" y="-100%" width="140%" height="300%"><feGaussianBlur stdDeviation="5"/></filter>
+    </defs>
+    <ellipse cx="79" cy="95" rx="58" ry="5" fill="#000" opacity=".22" filter="url(#${id}s)"/>
+    <rect x="3" y="0" width="152" height="46" rx="13" fill="url(#${id}b)"/>
+    <g class="sheets"><rect x="16" y="9" width="126" height="16" rx="5" fill="#EDEDF0"/><rect x="22" y="17" width="114" height="14" rx="5" fill="#fff"/></g>
+    <rect x="0" y="29" width="158" height="64" rx="17" fill="url(#${id}f)"/>
+    <path d="M17 30.5 H141" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"/>
+    <rect x="0" y="62" width="158" height="31" rx="17" fill="#000" opacity=".06"/>
+  </svg>`, g, 'left:21px;top:456px', 'abs');
+  const lbl = $(z.name, g, 'left:0;top:576px;width:200px;text-align:center;font-size:23px;line-height:30px', 'abs');
+  return { g, num, sheets: svg.querySelector('.sheets'), lbl };
+});
+
+// bottom glass cards
+const cardsEl = document.getElementById('cards');
+const CARDS = [
+  { x: 239, w: 376, big: '1000', sm: 'посылок', t: 2.0, count: 1000, or: false },
+  { x: 645, w: 342, big: '7', sm: 'зон на каждую', t: 4.0, or: false },
+  { x: 1017, w: 286, big: '6 с', sm: 'на всю тысячу', t: 5.0, or: true },
+  { x: 1333, w: 348, big: '90 ₽', sm: 'за весь прогон', t: 6.0, or: true },
+].map(c => {
+  const el = $(`<div class="big num ${c.or ? 'or' : ''}">${c.big}</div><div class="sm">${c.sm}</div>`, cardsEl, `left:${c.x}px;top:0;width:${c.w}px;height:192px`, 'abs gcard');
+  c.el = el; c.bigEl = el.querySelector('.big');
+  return c;
+});
+
+// ─────────────────────────────────────────────────────────── scene 2
+const room = document.getElementById('room'), plate = document.getElementById('plate');
+$('', room, 'left:0;top:0;width:1700px;height:640px;border-radius:36px;border:2px dashed rgba(255,255,255,.13);box-sizing:border-box', 'abs');
+$('место для вашего видео', room, 'left:0;top:290px;width:1700px;text-align:center;font-size:30px;font-weight:500;color:rgba(255,255,255,.22);font-family:Onest,Geist', 'abs');
+const roomBars = [[250, 60, 270, 300, 'rgba(176,96,52,.30)'], [1190, 90, 250, 330, 'rgba(120,70,44,.28)'], [680, 240, 320, 190, 'rgba(200,120,70,.16)']]
+  .map(([x, y, w, h, c]) => $('', room, `left:${x}px;top:${y}px;width:${w}px;height:${h}px;border-radius:28px;background:${c};filter:blur(46px)`, 'abs'));
+const WORDS = [
+  ['ln1', 'Сортирует', false, 8.5], ['ln1', 'без', true, 9.0], ['ln1', 'единой', true, 9.5],
+  ['ln2', 'ошибки', true, 10.0], ['ln2', 'за', false, 10.5], ['ln2', 'секунды', false, 11.0]];
+const wordEls = WORDS.map(([ln, txt, hot, t0], i) => {
+  const p = document.getElementById(ln);
+  const sp = $(txt, p, '', 'w' + (hot ? ' or' : ''));
+  p.appendChild(document.createTextNode(i === 2 || i === 5 ? '' : ' '));
+  return { el: sp, t0 };
+});
+
+// ─────────────────────────────────────────────────────────── scene 3
+const s3 = document.getElementById('s3');
+const FR = [[118, 31], [998, 31], [118, 566], [998, 566]];
+const B3 = [12.0, 12.5, 13.0, 13.5];
+const frames = FR.map(([x, y], j) => {
+  const f = $('', s3, `left:${x}px;top:${y}px;width:780px;height:483px`, 'abs frame');
+  const scr = $('', f, '', 'scr');
+  return { f, scr };
+});
+
+// screen 1 — route (light)
+const sc1 = frames[0].scr; sc1.style.background = '#F6F5F2';
+$('parcel.app <span style="color:#9A9895;font-weight:500">× Sorter</span>', sc1, 'left:24px;top:18px;font-size:16px;font-weight:600;color:#222', 'abs');
+$('REAL DATA · 1× SPEED', sc1, 'right:22px;top:15px;background:#E4F4E8;color:#1F9A3E;font-size:11px;letter-spacing:.06em', 'abs pill');
+$('Moscow → Kazan. In 7.1 seconds.', sc1, 'left:24px;top:52px;font-size:38px;font-weight:650;letter-spacing:-.9px;color:#111;white-space:nowrap', 'abs');
+$('One goal. Dynamic routes. Generated labels.', sc1, 'left:24px;top:104px;font-size:15px;color:#7A7876', 'abs');
+const mapBox = $('', sc1, 'left:24px;top:142px;width:470px;height:296px;border-radius:18px;background:#1A2130;overflow:hidden', 'abs');
+mapBox.innerHTML = `<svg width="470" height="296" viewBox="0 0 470 296" style="position:absolute;left:0;top:0">
+  <g stroke="rgba(255,255,255,.06)" stroke-width="1">${Array.from({ length: 9 }, (_, i) => `<line x1="${i * 60}" y1="0" x2="${i * 60}" y2="296"/>`).join('')}${Array.from({ length: 6 }, (_, i) => `<line x1="0" y1="${i * 60}" x2="470" y2="${i * 60}"/>`).join('')}</g>
+  <path id="rt" d="M52 232 C 130 70, 250 270, 418 70" fill="none" stroke="#39445E" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>
+  <path id="rtp" d="M52 232 C 130 70, 250 270, 418 70" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+  <circle cx="52" cy="232" r="6" fill="#fff"/><circle cx="418" cy="70" r="6" fill="none" stroke="#fff" stroke-width="3"/>
+  <text x="52" y="258" fill="#aab3c8" font-size="14" font-family="Geist" text-anchor="middle">Moscow</text>
+  <text x="418" y="52" fill="#aab3c8" font-size="14" font-family="Geist" text-anchor="middle">Kazan</text>
+  <circle id="truck" r="9" fill="#FF6A2A" stroke="#fff" stroke-width="3"/></svg>`;
+const rtp = mapBox.querySelector('#rtp'), rtLen = rtp.getTotalLength(), truck = mapBox.querySelector('#truck');
+const timerEl = $('00.00', sc1, 'left:520px;top:140px;font-size:50px;font-weight:600;color:#111;letter-spacing:-1px', 'abs mono num');
+$('SECONDS ELAPSED', sc1, 'left:522px;top:200px;font-size:11px;color:#9A9895;letter-spacing:.1em;font-weight:600', 'abs');
+const CHK = ['Pickup scanned', 'Zone assigned', 'Route built', 'Truck loaded', 'Delivered'];
+const chkEls = CHK.map((c, k) => {
+  const row = $(`<svg width="22" height="22" viewBox="0 0 22 22" style="position:absolute;left:0;top:0"><circle cx="11" cy="11" r="9.5" fill="none" stroke="#C9C7C3" stroke-width="2"/><circle class="cf" cx="11" cy="11" r="10.5" fill="#22A745"/><path class="cm" d="M6.5 11.5l3 3 6-6.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span style="position:absolute;left:34px;top:0;font-size:17px;color:#222;font-weight:500;line-height:22px;white-space:nowrap">${c}</span>`,
+    sc1, `left:522px;top:${246 + k * 34}px;width:210px;height:22px`, 'abs');
+  return { row, cf: row.querySelector('.cf'), cm: row.querySelector('.cm') };
+});
+$('143 ms', sc1, 'left:522px;top:398px;font-size:22px;font-weight:600;color:#111', 'abs mono');
+$('median decision latency', sc1, 'left:522px;top:430px;font-size:12px;color:#9A9895;white-space:nowrap', 'abs');
+
+// screen 2 — batch triage (dark)
+const sc2 = frames[1].scr; sc2.style.background = '#0F1217'; sc2.style.color = '#fff';
+$('Batch Parcel Triage', sc2, 'left:24px;top:22px;font-size:34px;font-weight:650;letter-spacing:-.6px;color:#fff;white-space:nowrap', 'abs');
+$('● Sorter System One', sc2, 'left:362px;top:32px;background:rgba(43,198,98,.14);color:#4BE08A;border:1px solid rgba(75,224,138,.4);font-size:12px', 'abs pill');
+$('Every parcel gets 7 typed judgments in a single call. Zone, urgency, fragility, size, route, return risk, priority.', sc2, 'left:24px;top:70px;width:700px;font-size:14px;color:rgba(255,255,255,.62);line-height:20px', 'abs');
+const runBtn = $('Run Batch', sc2, 'left:24px;top:124px;width:268px;height:46px;border-radius:12px;background:#3B82F6;text-align:center;font-size:17px;font-weight:600;line-height:46px;color:#fff', 'abs');
+const runBar = $('', sc2, 'left:24px;top:182px;height:3px;border-radius:2px;background:#6AA3FF', 'abs');
+$('LIVE', sc2, 'left:24px;top:206px;color:rgba(255,255,255,.4)', 'abs tiny');
+const tiles = [['PROCESSED', 24, 222, 130], ['AVG LATENCY', 162, 222, 130], ['THROUGHPUT', 24, 314, 130], ['TOKENS USED', 162, 314, 130]].map(([cap, x, y, w]) => {
+  const tl = $('', sc2, `left:${x}px;top:${y}px;width:${w}px;height:82px;border-radius:12px;background:rgba(255,255,255,.06)`, 'abs');
+  $(cap, tl, 'left:12px;top:10px;color:rgba(255,255,255,.42);font-size:10px', 'abs tiny');
+  return $('', tl, 'left:12px;top:30px;font-size:30px;font-weight:600;color:#fff', 'abs num mono');
+});
+$('PARCEL QUEUE', sc2, 'left:316px;top:124px;color:rgba(255,255,255,.4)', 'abs tiny');
+const QUEUE = [['What is the maximum size for a single pallet?', 'Oversize', '#C58BFF'], ['Glass lamp, handle with care', 'Fragile', '#7DB2FF'], ['Express docs for tomorrow morning', 'Express', '#FFB65C'],
+  ['Standard box, 2.4 kg, Kazan', 'Standard', '#6BE58A'], ['Return label printed, wrong size', 'Returns', '#B4B4BC'], ['Pallet of tiles, 84 kg', 'Oversize', '#C58BFF']];
+const qRows = QUEUE.map(([txt, z, c], k) => $(`<span style="position:absolute;left:12px;top:11px;font-size:11px;color:rgba(255,255,255,.3)">0${k + 3}</span><span style="position:absolute;left:36px;top:9px;width:290px;font-size:14px;color:rgba(255,255,255,.88);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${txt}</span><span class="pill" style="position:absolute;right:10px;top:8px;background:rgba(255,255,255,.07);color:${c}">${z}</span>`,
+  sc2, `left:316px;top:${150 + k * 49}px;width:420px;height:40px;border-radius:10px`, 'abs'));
+
+// screen 3 — live inference (near black)
+const sc3 = frames[2].scr; sc3.style.background = '#09090B'; sc3.style.color = '#fff';
+$('LIVE INFERENCE', sc3, 'left:26px;top:22px;color:rgba(255,255,255,.4)', 'abs tiny');
+$('<div style="position:absolute;left:12px;top:11px;width:16px;height:2px;background:#aaa"></div><div style="position:absolute;left:12px;top:17px;width:16px;height:2px;background:#aaa"></div><div style="position:absolute;left:12px;top:23px;width:10px;height:2px;background:#aaa"></div>', sc3, 'left:26px;top:68px;width:40px;height:38px;border-radius:10px;background:rgba(255,255,255,.07)', 'abs');
+$('Inbox', sc3, 'left:80px;top:68px;font-size:20px;font-weight:600;color:#fff', 'abs');
+$('100 parcels · 50 broken · 50 intact', sc3, 'left:80px;top:94px;font-size:13px;color:rgba(255,255,255,.4)', 'abs');
+$('', sc3, 'left:290px;top:86px;width:210px;height:2px;background:rgba(255,255,255,.14)', 'abs');
+const flowDot = $('', sc3, 'left:0;top:80px;width:36px;height:14px;border-radius:7px;background:linear-gradient(90deg,rgba(255,170,60,0),#FFB03C)', 'abs');
+$('<div style="width:12px;height:12px;border-radius:50%;background:#FFB03C;margin:15px"></div>', sc3, 'left:520px;top:62px;width:42px;height:42px;border-radius:12px;background:rgba(255,176,60,.16);border:1px solid rgba(255,176,60,.5)', 'abs');
+$('Sorter <span class="pill" style="background:rgba(255,255,255,.1);color:#ddd;font-size:10px">TYPESAFE</span>', sc3, 'left:574px;top:64px;font-size:19px;font-weight:600;white-space:nowrap', 'abs');
+$('72 decisions · 243 ms', sc3, 'left:574px;top:92px;font-size:12px;color:rgba(255,255,255,.4);white-space:nowrap', 'abs');
+$('MSG-069 · reviewing…', sc3, 'left:26px;top:150px;font-size:13px;color:rgba(255,255,255,.38)', 'abs mono');
+$('', sc3, 'left:26px;top:178px;width:704px;height:2px;background:rgba(255,255,255,.1)', 'abs');
+const liveBar = $('', sc3, 'left:26px;top:178px;height:2px;background:#fff', 'abs');
+const stats3 = [['Accuracy against labels', 26, 100, '%'], ['Decided by Sorter alone', 270, 63, '%'], ['Fraud recall', 514, 100, '']].map(([cap, x, v, u]) => {
+  $(cap, sc3, `left:${x}px;top:214px;font-size:13px;color:rgba(255,255,255,.42)`, 'abs');
+  return { el: $('', sc3, `left:${x}px;top:236px;font-size:52px;font-weight:600;letter-spacing:-1.5px;color:#fff`, 'abs num'), v, u };
+});
+$('Decisions', sc3, 'left:26px;top:344px;font-size:15px;font-weight:600;color:rgba(255,255,255,.8)', 'abs');
+const chipRow = $('', sc3, 'left:26px;top:378px;display:flex;gap:10px', 'abs');
+const chips = ['All', 'Escalated', 'Broken', 'Intact'].map((c, k) => $(c, chipRow, `background:rgba(255,255,255,${k ? .06 : .14});color:${k ? 'rgba(255,255,255,.6)' : '#fff'};font-size:13px;padding:6px 14px`, 'pill'));
+
+// screen 4 — benchmark (indigo)
+const sc4 = frames[3].scr; sc4.style.background = 'linear-gradient(160deg,#1B1659,#241B78 55%,#1A1456)'; sc4.style.color = '#fff';
+const BENCH = [['Sorter', 0.36, 0.09, '#9A8BFF'], ['Barcode script', 1.40, 0.36, 'rgba(255,255,255,.34)'], ['Two workers', 9.80, 1.0, 'rgba(255,255,255,.34)'], ['Manual, one worker', 18.5, 1.0, 'rgba(255,255,255,.34)']];
+const benchRows = BENCH.map(([name, val, frac, col], k) => {
+  const y = 38 + k * 104;
+  const nm = $(name, sc4, `left:34px;top:${y}px;font-size:25px;font-weight:550;color:${k ? '#fff' : '#B5AAFF'}`, 'abs');
+  const vl = $('', sc4, `right:34px;top:${y - 2}px;font-size:30px;font-weight:700;color:#fff;letter-spacing:-.5px`, 'abs num');
+  $('', sc4, `left:34px;top:${y + 50}px;width:688px;height:14px;border-radius:7px;background:rgba(255,255,255,.1)`, 'abs');
+  const bar = $('', sc4, `left:34px;top:${y + 50}px;height:14px;border-radius:7px;background:${col}`, 'abs');
+  return { nm, vl, bar, val, frac };
+});
+
+// ─────────────────────────────────────────────────────────── seek
+const BG = [[g1 => g1, 0]];
+function seek(tIn) {
+  const t = clamp(tIn, 0, T);
+  const tq = Math.round(t * FPS) / FPS;   // numbers are read at frame time: the 4 blur subframes show one value, no ghost digits
+  // background: slow drift, three glow levels per scene
+  const g1 = document.getElementById('g1'), g2 = document.getElementById('g2'), g3 = document.getElementById('g3');
+  g1.style.transform = `translate(${px(40 * Math.sin(t * .31))}, ${px(30 * Math.cos(t * .27))})`;
+  g2.style.transform = `translate(${px(-50 * Math.cos(t * .23))}, ${px(36 * Math.sin(t * .29))})`;
+  g3.style.opacity = (0.35 + 0.65 * S(t - 5.8, SOFT) * (1 - S(t - 7.6, SOFT)) + 0.7 * S(t - 8.0, SOFT) * (1 - S(t - 11.8, SOFT))).toFixed(3);
+  g3.style.transform = `translate(${px(S(t - 8.0, SOFT) * -120 + S(t - 11.8, SOFT) * 120)}, ${px(S(t - 8.0, SOFT) * 260 - S(t - 11.8, SOFT) * 260)})`;
+
+  // ── scene 1
+  const on1 = t < 8.1;
+  s1.style.visibility = on1 ? '' : 'hidden';
+  if (on1) {
+    const X1 = 7.5;
+    io(win, t, 0.0, X1, { dy: 140, sc: .95, blur: 16, scOut: .95, dyOut: -30, blurOut: 14 }, { f: .62, z: .9 });
+    io(ringEl, t, 0.0, X1, { dy: 140, sc: .95, blur: 16, scOut: .95, dyOut: -30, blurOut: 14 }, { f: .62, z: .9 });
+    io(hdr, t, 0.5, null, { dy: 18, blur: 8 });
+    const all = count(0, tq);
+    sorting.textContent = `Sorting ${fmt(all)} of 1,000`;
+    // parcels flow toward the sorter and are absorbed on each beat
+    io(stream, t, 0.9, null, { blur: 6 }, SOFT);
+    pcs.forEach((p, i) => {
+      const xc = 850 + SPEED * (t - tc(i)) - 26;
+      const gone = S(t - tc(i) - 0.04, { f: .26, z: 1 });
+      p.style.left = px(xc - 150);
+      p.style.opacity = (1 - gone).toFixed(3);
+      p.style.transform = `scale(${(1 - 0.12 * gone).toFixed(4)})`;
+      p.style.filter = gone > 0.02 ? `blur(${(gone * 6).toFixed(2)}px)` : 'none';
+      p.style.visibility = (gone > 0.995 || xc < -180) ? 'hidden' : '';
+    });
+    labels.forEach((l, i) => io(l, t, tc(i) + 0.03, tc(i) + 0.44, { dy: 10, dyOut: -8, blur: 6, blurOut: 6, sc: .98, scOut: .98 }, { f: .26, z: .95 }));
+    // track, fill, node (pulses on every beat once sorting starts)
+    fillEl.style.width = px(1648 * all / 1000);
+    const ph = mod(t - T0, BEAT), pulse = t >= T0 ? Math.exp(-ph / 0.09) : 0;
+    node.style.transform = `scale(${(1 + 0.55 * pulse).toFixed(3)})`;
+    // bins
+    const ringX = BIN_X(1) + (() => { let v = 0, prev = 1; for (let i = 0; i < N; i++) { v += (BIN_X(ROUTE[i]) - BIN_X(prev)) * S(t - tc(i) - 0.02, RING); prev = ROUTE[i]; } return v; })();
+    ring.style.left = px(ringX - 87);
+    io(ring, t, 2.0, null, { sc: .9, blur: 4 });
+    bins.forEach((b, k) => {
+      io(b.g, t, 1.5 + 0.06 * k, null, { dy: 30, blur: 8 });
+      const c = count(k, tq);
+      b.num.textContent = fmt(c);
+      b.sheets.style.opacity = c > 0 ? 1 : 0;
+      const act = clamp(1 - Math.abs(ringX - BIN_X(k)) / 238);
+      b.lbl.style.fontWeight = (430 + 300 * act).toFixed(0);
+      b.lbl.style.color = `rgb(${[142, 140, 138].map((v, j) => Math.round(lerp(v, [17, 17, 17][j], act))).join(',')})`;
+    });
+    io(orange, t, 6.0, null, { sc: 1.025, blur: 0 }, { f: .3, z: .85 });
+    CARDS.forEach(c => {
+      const v = io(c.el, t, c.t, 7.5 + 0.04 * CARDS.indexOf(c), { dy: 70, sc: .94, blur: 14, dyOut: 40, scOut: .96, blurOut: 12 }, { f: .46, z: .86 });
+      if (c.count && v) c.bigEl.textContent = String(Math.round(c.count * (1 - Math.pow(1 - clamp((tq - c.t) / 1.0), 3))));
+    });
+  }
+
+  // ── scene 2
+  const on2 = t > 7.9 && t < 12.2;
+  document.getElementById('s2').style.visibility = on2 ? '' : 'hidden';
+  if (on2) {
+    io(room, t, 8.0, 11.6, { blur: 20, sc: 1.03, blurOut: 20, scOut: 1.03 }, SOFT);
+    roomBars.forEach((r, i) => { r.style.transform = `translate(${px(30 * Math.sin(t * .5 + i * 2))}, ${px(16 * Math.cos(t * .4 + i))})`; });
+    io(plate, t, 8.0, 11.5, { dy: 80, sc: .96, blur: 16, dyOut: 30, scOut: .97, blurOut: 16 }, { f: .5, z: .86 });
+    wordEls.forEach(w => io(w.el, t, w.t0, null, { dy: 34, blur: 12, sc: .96 }, { f: .36, z: .92 }));
+  }
+
+  // ── scene 3
+  const on3 = t > 11.9;
+  s3.style.visibility = on3 ? '' : 'hidden';
+  if (on3) {
+    const drift = 1 + 0.012 * clamp((t - 12) / 4);
+    s3.style.transform = `scale(${drift.toFixed(4)})`;
+    frames.forEach((f, j) => io(f.f, t, B3[j], null, { dy: 70, sc: .93, blur: 16 }, { f: .5, z: .86 }));
+
+    // screen 1
+    const b1 = B3[0], u1 = clamp((tq - (b1 + 0.5)) / 2.5), e1 = 1 - Math.pow(1 - u1, 2.2);
+    timerEl.textContent = (7.1 * e1).toFixed(2).padStart(5, '0');
+    rtp.style.strokeDasharray = `${(rtLen * e1).toFixed(1)} ${rtLen}`;
+    const pt = rtp.getPointAtLength(rtLen * e1);
+    truck.setAttribute('cx', pt.x); truck.setAttribute('cy', pt.y);
+    chkEls.forEach((c, k) => {
+      const v = S(t - (b1 + 0.5 + 0.5 * k), POP);
+      c.cf.setAttribute('r', (10.5 * clamp(v, 0, 1.1)).toFixed(2));
+      c.cm.style.opacity = clamp((v - .3) / .5);
+      c.cm.setAttribute('stroke-dasharray', '14 14'); c.cm.setAttribute('stroke-dashoffset', (14 * (1 - clamp(v))).toFixed(2));
+    });
+
+    // screen 2
+    const b2 = B3[1], u2 = clamp((tq - (b2 + 0.5)) / 2.0);
+    const press = S(t - (b2 + 0.5), { f: .14, z: .8 }) - S(t - (b2 + 0.62), { f: .14, z: .8 });
+    runBtn.style.transform = `scale(${(1 - 0.05 * press).toFixed(4)})`;
+    runBar.style.width = px(268 * u2);
+    tiles[0].innerHTML = `${Math.round(30 * u2)}<span style="font-size:15px;color:rgba(255,255,255,.35)"> / 30</span>`;
+    tiles[1].innerHTML = `${Math.round(606 * clamp(u2 * 3))}<span style="font-size:15px;color:rgba(255,255,255,.35)"> ms</span>`;
+    tiles[2].innerHTML = `${(1.6 * clamp(u2 * 3)).toFixed(1)}<span style="font-size:15px;color:rgba(255,255,255,.35)"> /s</span>`;
+    tiles[3].textContent = fmt(9820 * u2);
+    qRows.forEach((r, k) => {
+      io(r, t, b2 + 0.5 + 0.25 * k, null, { dx: 28, blur: 6 }, { f: .34, z: .92 });
+      const hot = S(t - (b2 + 1.0 + 0.5 * k), QUICK) * (1 - S(t - (b2 + 1.5 + 0.5 * k), QUICK));
+      r.style.background = `rgba(255,255,255,${(0.1 * hot).toFixed(3)})`;
+    });
+
+    // screen 3
+    const b3 = B3[2], u3 = clamp((tq - (b3 + 0.5)) / 1.6);
+    flowDot.style.left = px(290 + 180 * mod((t - b3) * 1.1, 1));
+    io(flowDot, t, b3 + 0.25, null, { blur: 4 });
+    liveBar.style.width = px(704 * (0.45 + 0.4 * u3));
+    stats3.forEach((s, k) => { io(s.el, t, b3 + 0.5 + 0.25 * k, null, { dy: 14, blur: 6 }); s.el.innerHTML = `${Math.round(s.v * (1 - Math.pow(1 - u3, 3)))}<span style="font-size:30px">${s.u}</span>`; });
+    chips.forEach((c, k) => io(c, t, b3 + 1.5 + 0.1 * k, null, { dy: 10, blur: 4 }));
+
+    // screen 4
+    const b4 = B3[3];
+    benchRows.forEach((r, k) => {
+      const t0 = b4 + 0.5 + 0.25 * k, g = S(t - t0, { f: .8, z: 1 });
+      io(r.nm, t, t0 - 0.1, null, { dx: -16, blur: 6 });
+      r.bar.style.width = px(688 * r.frac * clamp(g));
+      r.vl.textContent = (r.val * clamp(S(tq - t0, { f: .8, z: 1 }))).toFixed(r.val < 5 ? 2 : 1) + ' s';
+    });
+  }
+  document.getElementById('hud').textContent = `${t.toFixed(3)}s  beat ${Math.floor(t / BEAT + 1e-6) + 1}`;
+}
+window.T = T; window.FPS = FPS; window.seek = seek;
+window.ready = document.fonts.load('500 20px Geist').then(() => document.fonts.load('800 80px Onest')).then(() => document.fonts.ready).then(() => { seek(0); return true; });
+const qs = new URLSearchParams(location.search);
+if (qs.has('debug')) document.getElementById('hud').style.display = 'block';
+if (qs.has('t')) window.ready.then(() => seek(parseFloat(qs.get('t'))));
+</script>
+</body>
+</html>
